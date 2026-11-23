@@ -135,21 +135,20 @@ const adapter: Adapter = {
     setStep('publish/photos');
     console.log('[FluxLibre] publish: étape photos —', listing.images.length, 'à importer');
     if (listing.images.length > 0) {
-      const fileInput =
-        document.querySelector<HTMLInputElement>('input[type="file"][accept*="image"]') ??
-        document.querySelector<HTMLInputElement>('input[type="file"]');
-      if (fileInput) {
-        await uploadPhotos(fileInput, listing.images);
-      } else {
+      // L'input file est créé quand l'étape photo est rendue : on l'attend.
+      await waitForAny(['input[type="file"]'], 8_000);
+      let fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
+      if (!fileInput) {
         // Repli : clic sur « Importer » puis injection sur l'input apparu.
         const importer = document.querySelector('span[data-spark-component="file-upload-trigger"]');
         if (importer) {
           click(importer);
-          await new Promise((r) => setTimeout(r, 500));
-          const fallback = document.querySelector<HTMLInputElement>('input[type="file"]');
-          if (fallback) await uploadPhotos(fallback, listing.images);
+          await waitForAny(['input[type="file"]'], 5_000);
+          fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
         }
       }
+      if (fileInput) await uploadPhotos(fileInput, listing.images);
+      else console.warn('[FluxLibre] input file introuvable à l’étape photo');
     }
 
     // Étape 3 (détails) : « État » est requis — valeur par défaut « Bon état ».
@@ -192,7 +191,15 @@ const adapter: Adapter = {
       document.querySelector<HTMLElement>('[contenteditable="true"]');
     const priceInput = document.querySelector<HTMLInputElement>('input[name="price"]');
     if (descriptionInput) await human.type(descriptionInput, listing.description);
-    if (priceInput) await human.type(priceInput, String(listing.price));
+    if (priceInput) {
+      await human.type(priceInput, String(listing.price));
+      // L'IA de Leboncoin peut écraser le prix quelques secondes plus tard :
+      // on revérifie et on réécrit notre prix si besoin.
+      await new Promise((r) => setTimeout(r, 1_200));
+      if (priceInput.value.replace(/\s/g, '') !== String(listing.price)) {
+        await human.type(priceInput, String(listing.price));
+      }
+    }
 
     // Adresse de remise du bien : champ « Adresse » avec autocomplétion.
     if (listing.address) {
@@ -417,6 +424,18 @@ const adapter: Adapter = {
         delivery: /livraison/i.test(document.body.innerText ?? ''),
         category,
       },
+    };
+  },
+
+  async check(job): Promise<JobResult> {
+    const text = document.body.innerText ?? '';
+    const pending = /en cours de vérification|en cours de modération|vérification en cours/i.test(text);
+    const introuvable = /annonce introuvable|annonce désactivée|cette annonce n'est plus/i.test(text);
+    return {
+      ok: true,
+      adId: String(job.payload['adId'] ?? '') || undefined,
+      url: location.href,
+      data: { status: introuvable ? 'missing' : pending ? 'pending' : 'published' },
     };
   },
 

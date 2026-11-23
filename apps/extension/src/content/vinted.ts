@@ -71,6 +71,10 @@ const adapter: Adapter = {
     return { ok: false, error: 'Mise à jour Vinted à implémenter' };
   },
 
+  async check() {
+    return { ok: false, error: 'Vérification Vinted à implémenter' };
+  },
+
   async sync(): Promise<JobResult> {
     await waitForAny(s.listingRow ?? [], 12_000);
     const rows = [...new Set((s.listingRow ?? []).flatMap((selector) => [...document.querySelectorAll(selector)]))];

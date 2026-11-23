@@ -55,7 +55,7 @@ export function platformFromUrl(url: string | undefined): Platform | null {
 /** URL de départ d'une tâche selon son type. */
 export function startUrl(job: Job): string {
   const base = baseUrl(job.platform);
-  if (job.type === 'enrich' || job.type === 'refresh') {
+  if (job.type === 'enrich' || job.type === 'refresh' || job.type === 'check') {
     const url = job.payload['url'];
     if (typeof url === 'string' && /^https?:\/\//.test(url)) return url;
   }

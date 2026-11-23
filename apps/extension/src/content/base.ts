@@ -10,6 +10,7 @@ export interface Adapter {
   sync(): Promise<JobResult>;
   enrich(job: Job): Promise<JobResult>;
   refresh(job: Job): Promise<JobResult>;
+  check(job: Job): Promise<JobResult>;
 }
 
 /** Dernière étape atteinte, pour le diagnostic en cas de blocage. */
@@ -245,28 +246,31 @@ export function click(element: Element | null): boolean {
   return true;
 }
 
-/** Télécharge les images via le background puis les injecte dans l'input file. */
+/** Télécharge les images en parallèle puis les injecte dans l'input file. */
 export async function uploadPhotos(input: Element | null, urls: string[]): Promise<void> {
   if (!input || urls.length === 0) return;
+  // Parallèle : évite que le service worker meurt pendant une longue suite de fetch.
+  const blobs = await Promise.all(
+    urls.map(async (url) => {
+      try {
+        const response = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+        if (!response.ok) return null;
+        return await response.blob();
+      } catch {
+        return null;
+      }
+    }),
+  );
   const transfer = new DataTransfer();
-  for (const url of urls) {
-    try {
-      // Téléchargement direct (host_permissions déjà accordées dans le manifest).
-      const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-      if (!response.ok) continue;
-      const blob = await response.blob();
-      const name = `photo-${transfer.items.length + 1}.jpg`;
-      transfer.items.add(new File([blob], name, { type: blob.type || 'image/jpeg' }));
-      await human.beat();
-    } catch {
-      /* image ignorée */
-    }
+  for (const blob of blobs) {
+    if (!blob) continue;
+    const name = `photo-${transfer.items.length + 1}.jpg`;
+    transfer.items.add(new File([blob], name, { type: blob.type || 'image/jpeg' }));
   }
   if (transfer.items.length === 0) return;
   const fileInput = input as HTMLInputElement;
   fileInput.files = transfer.files;
   fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-  await human.read();
 }
 
 export async function fillCommon(listing: Listing, platform: Platform, autoSubmit: boolean): Promise<JobResult> {
@@ -360,6 +364,7 @@ async function execute(job: Job, adapter: Adapter): Promise<JobResult> {
     if (job.type === 'sync') return adapter.sync();
     if (job.type === 'enrich') return adapter.enrich(job);
     if (job.type === 'refresh') return adapter.refresh(job);
+    if (job.type === 'check') return adapter.check(job);
     return { ok: false, error: `Type de tâche inconnu: ${String(job.type)}` };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };

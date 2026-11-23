@@ -42,7 +42,7 @@ export interface Publication {
   error?: string | null;
 }
 
-export type JobType = 'publish' | 'renew' | 'pause' | 'delete' | 'sync' | 'enrich' | 'refresh';
+export type JobType = 'publish' | 'renew' | 'pause' | 'delete' | 'sync' | 'enrich' | 'refresh' | 'check';
 
 export type JobStatus = 'queued' | 'running' | 'done' | 'failed';
 

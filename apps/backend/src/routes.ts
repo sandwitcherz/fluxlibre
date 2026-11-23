@@ -118,7 +118,9 @@ function importSyncedAds(platform: Platform, data: unknown): number {
     const existing = store.findPublicationByAdId(platform, adId);
     if (existing) {
       const current = store.getListing(existing.listingId);
-      const patch: Partial<Omit<Listing, 'id' | 'createdAt' | 'updatedAt'>> = { price, status };
+      const patch: Partial<Omit<Listing, 'id' | 'createdAt' | 'updatedAt'>> = { status };
+      // Ne remplace le prix que si la synchro en a trouvé un (> 0).
+      if (price > 0) patch.price = price;
       if (category) patch.category = category;
       // Ne remplace les photos que si on en a au moins autant.
       if (images.length >= (current?.images.length ?? 0) && images.length > 0) patch.images = images;
@@ -683,6 +685,36 @@ api.post(
         store.updateListing(listing.id, {
           status: !result.ok ? 'error' : manual ? 'draft' : 'published',
         });
+        // Vérification différée à 5 min : Leboncoin peut encore être en
+        // « cours de vérification » juste après le dépôt.
+        if (result.ok && !manual) {
+          const url = result.url ?? store.getPublication(listing.id, job.platform)?.url;
+          if (url && !url.includes('/deposer-une-annonce')) {
+            store.createJob({
+              type: 'check',
+              platform: job.platform,
+              listingId: listing.id,
+              publicationId: job.publicationId,
+              notBefore: new Date(Date.now() + 5 * 60_000).toISOString(),
+              payload: { url, adId: result.adId },
+            });
+          }
+        }
+      } else if (job.type === 'check' && result.ok && result.data !== undefined) {
+        const data = result.data as { status?: unknown };
+        const state = data.status;
+        if (state === 'published') {
+          store.upsertPublication(listing.id, job.platform, {
+            status: 'published',
+            error: null,
+            lastPublishedAt: new Date().toISOString(),
+          });
+          store.updateListing(listing.id, { status: 'published' });
+        } else if (state === 'missing') {
+          store.upsertPublication(listing.id, job.platform, { status: 'failed', error: 'Annonce introuvable' });
+          store.updateListing(listing.id, { status: 'error' });
+        }
+        // 'pending' : on ne change rien, un nouveau check pourra être relancé.
       } else if (job.type === 'pause') {
         if (result.ok) {
           store.upsertPublication(listing.id, job.platform, { status: 'expired' });

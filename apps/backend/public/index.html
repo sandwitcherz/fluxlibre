@@ -133,8 +133,9 @@
 
   <section>
     <h2>Annonces</h2>
-    <button id="btn-enrich">Récupérer toutes les photos</button>
-    <button class="secondary" id="btn-import">Importer les annonces synchronisées</button>
+    <button id="btn-sync"><i class="fa-solid fa-sync"></i> Synchroniser Leboncoin</button>
+    <button class="secondary" id="btn-enrich"><i class="fa-solid fa-images"></i> Récupérer les photos</button>
+    <button class="secondary" id="btn-import"><i class="fa-solid fa-file-import"></i> Importer la synchro</button>
     <div class="tabs" id="tabs">
       <button data-tab="published" class="active">En ligne</button>
       <button data-tab="paused">En pause</button>
@@ -348,6 +349,13 @@ document.body.addEventListener('click', async (e) => {
   } catch (err) { toast(err.message); }
 });
 
+$('btn-sync').onclick = async () => {
+  try {
+    const r = await api('/sync', { method: 'POST', body: JSON.stringify({ platforms: ['leboncoin'] }) });
+    toast('Synchro lancée — l’extension va lire vos annonces');
+    await refresh();
+  } catch (e) { toast(e.message); }
+};
 $('btn-enrich').onclick = async () => {
   try { const r = await api('/enrich', { method: 'POST', body: JSON.stringify({ platform: 'leboncoin' }) }); toast(`${r.jobs.length} annonce(s) en file — l'extension va les ouvrir`); await refresh(); }
   catch (e) { toast(e.message); }
