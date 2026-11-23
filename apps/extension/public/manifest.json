@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "FluxLibre — Leboncoin & Vinted",
+  "short_name": "FluxLibre",
+  "version": "0.1.0",
+  "description": "Publiez, renouvelez et supprimez vos annonces Leboncoin et Vinted depuis un backend local. Libre et open-source.",
+  "permissions": ["storage", "alarms", "tabs", "activeTab", "scripting"],
+  "host_permissions": [
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "https://img.leboncoin.fr/*",
+    "https://www.leboncoin.fr/*",
+    "https://leboncoin.fr/*",
+    "https://www.vinted.fr/*",
+    "https://www.vinted.com/*",
+    "https://*.cloudfront.net/*",
+    "https://*.akamaized.net/*"
+  ],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_popup": "popup.html", "default_title": "FluxLibre" },
+  "options_ui": { "page": "options.html", "open_in_tab": true },
+  "content_scripts": [
+    {
+      "matches": ["https://www.leboncoin.fr/*", "https://leboncoin.fr/*"],
+      "js": ["content/leboncoin.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": ["https://www.vinted.fr/*", "https://www.vinted.com/*"],
+      "js": ["content/vinted.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}

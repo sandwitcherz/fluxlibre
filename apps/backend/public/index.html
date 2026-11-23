@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FluxLibre</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+<style>
+  :root {
+    --bg:#0b0d11; --panel:#151920; --panel-2:#1b2028; --line:#2b323d;
+    --text:#edf0f5; --muted:#98a2b3; --accent:#5ee9b5; --accent-dim:#2f8f6d;
+    --danger:#ff7a7a; --warn:#ffc46b; --info:#7aa7ff;
+    --radius:14px; --radius-sm:9px; --shadow:0 8px 24px rgba(0,0,0,.28);
+  }
+  * { box-sizing:border-box }
+  body { margin:0; background:radial-gradient(1200px 600px at 80% -10%,#16202b 0%,var(--bg) 55%); color:var(--text); font:14px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif }
+
+  header { position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between; padding:18px 28px; background:rgba(11,13,17,.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--line) }
+  h1 { margin:0; font-size:21px; font-weight:800; letter-spacing:.4px }
+  h1 span { color:var(--accent) }
+  .status-pill { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; background:var(--panel); border:1px solid var(--line); border-radius:99px; font-size:12px; color:var(--muted) }
+  .status-pill .dot { width:8px; height:8px; border-radius:50%; background:var(--danger); box-shadow:0 0 0 3px rgba(255,122,122,.12) }
+  .status-pill .dot.on { background:var(--accent); box-shadow:0 0 0 3px rgba(94,233,181,.14) }
+
+  main { max-width:1180px; margin:0 auto; padding:28px }
+  section { background:linear-gradient(180deg,var(--panel) 0%,var(--panel-2) 100%); border:1px solid var(--line); border-radius:var(--radius); padding:22px; margin-bottom:22px; box-shadow:var(--shadow) }
+  h2 { margin:0 0 18px; font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:1.6px; display:flex; align-items:center; gap:8px }
+  h2::before { content:""; width:4px; height:14px; border-radius:4px; background:var(--accent) }
+
+  label { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px }
+  input, textarea, select { width:100%; background:#0e1116; color:var(--text); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 12px; font:inherit; margin-bottom:12px; transition:border-color .15s,box-shadow .15s }
+  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--accent-dim); box-shadow:0 0 0 3px rgba(94,233,181,.12) }
+  textarea { min-height:90px; resize:vertical }
+  select { appearance:none; background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%); background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%; background-size:5px 5px; background-repeat:no-repeat; padding-right:30px }
+
+  button { background:linear-gradient(180deg,var(--accent) 0%,#3fc994 100%); color:#06281d; border:0; border-radius:var(--radius-sm); padding:10px 15px; font-weight:800; font-size:13px; cursor:pointer; margin-right:7px; transition:transform .12s,filter .15s,box-shadow .15s; box-shadow:0 3px 10px rgba(94,233,181,.16) }
+  button:hover { filter:brightness(1.08); transform:translateY(-1px) }
+  button:active { transform:translateY(0) }
+  button.secondary { background:var(--panel-2); color:var(--text); border:1px solid var(--line); box-shadow:none }
+  button.secondary:hover { background:#252c36 }
+  button.danger { background:linear-gradient(180deg,#ff8a8a 0%,#e85d5d 100%); color:#2b0808; box-shadow:0 3px 10px rgba(255,122,122,.14) }
+  button:disabled { opacity:.45; cursor:not-allowed; transform:none; filter:none }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px }
+
+  table { width:100%; border-collapse:separate; border-spacing:0; font-size:13.5px }
+  thead th { position:sticky; top:0; background:var(--panel); color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:1px; text-align:left; padding:11px 10px; border-bottom:1px solid var(--line) }
+  tbody td { padding:12px 10px; border-bottom:1px solid rgba(43,50,61,.6); vertical-align:middle }
+  tbody tr { transition:background .12s }
+  tbody tr:hover { background:rgba(255,255,255,.025) }
+  tbody tr.row-selected { background:rgba(94,233,181,.07) }
+  .thumb { width:54px; height:54px; object-fit:cover; border-radius:8px; margin-right:10px; vertical-align:middle; background:var(--panel-2); border:1px solid var(--line) }
+  .thumbs { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px }
+  .thumbs img { width:40px; height:40px; object-fit:cover; border-radius:6px; cursor:zoom-in; border:1px solid var(--line); transition:transform .12s,border-color .12s }
+  .thumbs img:hover { transform:scale(1.08); border-color:var(--accent) }
+
+  #lightbox { position:fixed; inset:0; background:rgba(0,0,0,.92); display:none; align-items:center; justify-content:center; z-index:50; cursor:zoom-out; padding:40px }
+  #lightbox img { max-width:94vw; max-height:92vh; object-fit:contain; border-radius:10px; box-shadow:0 20px 60px rgba(0,0,0,.6) }
+
+  .tag { display:inline-flex; align-items:center; gap:5px; padding:4px 9px; border-radius:99px; background:var(--panel-2); border:1px solid var(--line); font-size:10px; font-weight:700; margin:2px; white-space:nowrap }
+  .tag.ok { color:var(--accent); border-color:rgba(94,233,181,.35); background:rgba(94,233,181,.08) }
+  .tag.bad { color:var(--danger); border-color:rgba(255,122,122,.3); background:rgba(255,122,122,.07) }
+  .tag.warn { color:var(--warn); border-color:rgba(255,196,107,.3); background:rgba(255,196,107,.07) }
+  .tag i { font-size:11px }
+  .refresh-date { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; padding:3px 8px; border-radius:99px; margin-top:5px }
+  .refresh-date.fresh { color:var(--accent); background:rgba(94,233,181,.1) }
+  .refresh-date.mid { color:var(--warn); background:rgba(255,196,107,.1) }
+  .refresh-date.old { color:var(--danger); background:rgba(255,122,122,.1) }
+  .refresh-date.none { color:var(--muted); background:var(--panel-2) }
+  .pf-badge { display:inline-flex; flex-direction:column; align-items:center; gap:2px; padding:5px 9px; border-radius:9px; background:var(--panel-2); border:1px solid var(--line); margin:2px; min-width:64px }
+  .pf-badge i { font-size:14px }
+  .pf-badge span { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px }
+  .pf-badge.ok { color:var(--accent); border-color:rgba(94,233,181,.3) }
+  .pf-badge.ok span { color:var(--accent) }
+  .pf-badge.bad { color:var(--warn); border-color:rgba(255,196,107,.3) }
+  .pf-badge.bad span { color:var(--warn) }
+  .pf-badge.leboncoin { color:#ff9d4d; border-color:rgba(255,157,77,.45); background:rgba(255,157,77,.08) }
+  .pf-badge.leboncoin span { color:#ff9d4d }
+  .pf-badge.vinted { color:#5ee9d0; border-color:rgba(94,233,208,.45); background:rgba(94,233,208,.08) }
+  .pf-badge.vinted span { color:#5ee9d0 }
+  .tabs button[data-tab="leboncoin"] { color:#ff9d4d }
+  .tabs button[data-tab="vinted"] { color:#5ee9d0 }
+  .actions-cell { display:flex; flex-wrap:wrap; gap:6px; align-items:center; justify-content:center }
+  .icon-btn { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-width:58px; padding:7px 8px; font-size:9px; font-weight:700; letter-spacing:.3px }
+  .icon-btn i { font-size:15px }
+  td.center, th.center { text-align:center }
+
+  .tabs { display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--line) }
+  .tabs button { background:none; color:var(--muted); border:0; border-bottom:2px solid transparent; border-radius:0; padding:9px 14px; font-weight:700; cursor:pointer; margin:0; box-shadow:none }
+  .tabs button:hover { background:none; color:var(--text); transform:none }
+  .tabs button.active { color:var(--accent); border-bottom-color:var(--accent) }
+
+  .bulk-bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:16px; padding:12px 14px; background:#0e1116; border:1px solid var(--line); border-radius:var(--radius-sm) }
+  .bulk-bar .inline { display:flex; align-items:center; gap:7px; margin:0; font-size:13px; color:var(--text) }
+  .bulk-bar input[type="checkbox"] { width:auto; margin:0 }
+  .bulk-bar select, .bulk-bar input[type="number"] { width:auto; margin:0; padding:8px 10px }
+  .bulk-bar input[type="number"] { width:72px }
+  .bulk-bar button { margin-left:auto }
+  input[type="checkbox"].row-check { width:17px; height:17px; margin:0; cursor:pointer; accent-color:var(--accent) }
+
+  #toast { position:fixed; bottom:26px; right:26px; background:var(--panel-2); border:1px solid var(--line); box-shadow:var(--shadow); padding:13px 18px; border-radius:var(--radius-sm); display:none; z-index:60; font-size:13px; font-weight:600 }
+  .muted { color:var(--muted); font-size:12.5px }
+
+  @media (max-width:720px) {
+    header, main { padding-left:16px; padding-right:16px }
+    section { padding:16px }
+    .bulk-bar button { margin-left:0 }
+    table { font-size:12px }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Flux<span>Libre</span></h1>
+  <div class="muted" id="status">Connexion…</div>
+</header>
+<main>
+  <section>
+    <h2>Nouvelle annonce</h2>
+    <div class="grid">
+      <div><label>Titre</label><input id="f-title" placeholder="Veste en jean Levi's taille M" /></div>
+      <div><label>Prix (€)</label><input id="f-price" type="number" step="0.01" min="0" /></div>
+      <div><label>Catégorie</label><input id="f-category" placeholder="Mode / Vêtements" /></div>
+      <div><label>Livraison</label><select id="f-delivery"><option value="false">Non</option><option value="true">Oui</option></select></div>
+    </div>
+    <label>Description</label>
+    <textarea id="f-description" placeholder="État, mesures, matière…"></textarea>
+    <label>Photos (URLs ou chemins locaux, un par ligne)</label>
+    <textarea id="f-images" style="min-height:60px" placeholder="C:\photos\veste.jpg"></textarea>
+    <button id="btn-generate">Générer avec l'IA</button>
+    <button id="btn-create">Créer l'annonce</button>
+  </section>
+
+  <section>
+    <h2>Annonces</h2>
+    <button id="btn-enrich">Récupérer toutes les photos</button>
+    <button class="secondary" id="btn-import">Importer les annonces synchronisées</button>
+    <div class="tabs" id="tabs">
+      <button data-tab="published" class="active">En ligne</button>
+      <button data-tab="paused">En pause</button>
+      <button data-tab="all">Toutes</button>
+      <button data-tab="leboncoin">Leboncoin</button>
+      <button data-tab="vinted">Vinted</button>
+    </div>
+    <div class="bulk-bar">
+      <label class="inline"><input type="checkbox" id="select-all" /> Tout sélectionner</label>
+      <select id="renew-mode" title="Mode de renouvellement">
+        <option value="manual">Manuel (je valide)</option>
+        <option value="auto">Auto (dépose sans booster)</option>
+      </select>
+      <input type="number" id="renew-delay" value="20" min="5" max="300" title="Délai entre deux annonces (secondes)" />
+      <span class="muted">s entre chaque</span>
+      <button id="btn-renew-selection">Renouveler la sélection</button>
+    </div>
+    <table><thead><tr><th></th><th>Titre</th><th>Prix</th><th>Statut</th><th>Plateformes</th><th>Actions</th></tr></thead>
+    <tbody id="rows"></tbody></table>
+    <p class="muted" id="empty">Aucune annonce.</p>
+  </section>
+
+  <section>
+    <h2>File d'attente</h2>
+    <button id="btn-jobs">Rafraîchir</button>
+    <button class="secondary" id="btn-purge">Purger terminées / échouées</button>
+    <button class="secondary" id="btn-purge-all">Tout purger</button>
+    <button class="secondary" id="btn-maintenance">Maintenance / renouvellements</button>
+    <table><thead><tr><th>Type</th><th>Plateforme</th><th>Statut</th><th>Créée</th><th>Erreur</th></tr></thead>
+    <tbody id="job-rows"></tbody></table>
+  </section>
+
+  <section>
+    <h2>Configuration</h2>
+    <div class="grid">
+      <div><label>Fournisseur IA</label><select id="c-provider"><option value="none">Aucun</option><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="ollama">Ollama</option></select></div>
+      <div><label>Modèle</label><input id="c-model" /></div>
+      <div><label>URL de base (optionnel)</label><input id="c-baseurl" /></div>
+      <div><label>Clé API (stockée localement)</label><input id="c-key" type="password" /></div>
+      <div><label>Renouvellement après (jours)</label><input id="c-renew" type="number" min="1" /></div>
+      <div><label>Publication automatique</label><select id="c-autosubmit"><option value="false">Non (validation manuelle)</option><option value="true">Oui</option></select></div>
+    </div>
+    <button id="btn-config">Enregistrer</button>
+  </section>
+</main>
+<div id="lightbox"><img id="lightbox-img" alt="Aperçu" /></div>
+<div id="toast"></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const API = '/api';
+let state = { listings: [], publications: [], jobs: [] };
+
+async function api(path, options = {}) {
+  const res = await fetch(API + path, { headers: { 'Content-Type': 'application/json' }, ...options });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+  if (res.status === 204) return null;
+  return res.json();
+}
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.timer); toast.timer = setTimeout(() => t.style.display = 'none', 3500); }
+function tag(text, cls = '') { return `<span class="tag ${cls}">${text}</span>`; }
+
+async function refresh() {
+  try {
+    const [data, jobs] = await Promise.all([api('/listings'), api('/jobs')]);
+    state = { ...data, jobs: jobs.jobs };
+    render();
+    $('status').textContent = 'Backend connecté';
+  } catch (e) { $('status').textContent = 'Erreur: ' + e.message; }
+}
+
+let activeTab = 'published';
+const selectedIds = new Set();
+
+function render() {
+  const filtered = state.listings.filter(l => {
+    const pubs = state.publications.filter(p => p.listingId === l.id);
+    if (activeTab === 'leboncoin') return pubs.some(p => p.platform === 'leboncoin');
+    if (activeTab === 'vinted') return pubs.some(p => p.platform === 'vinted');
+    if (activeTab === 'all') return true;
+    if (activeTab === 'paused') return l.status === 'paused';
+    return l.status !== 'paused';
+  });
+  const counts = {
+    published: state.listings.filter(l => l.status !== 'paused').length,
+    paused: state.listings.filter(l => l.status === 'paused').length,
+    all: state.listings.length,
+    leboncoin: state.listings.filter(l => state.publications.some(p => p.listingId === l.id && p.platform === 'leboncoin')).length,
+    vinted: state.listings.filter(l => state.publications.some(p => p.listingId === l.id && p.platform === 'vinted')).length,
+  };
+  document.querySelectorAll('#tabs button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === activeTab);
+    const n = counts[btn.dataset.tab] ?? 0;
+    btn.textContent = ({ published: 'En ligne', paused: 'En pause', all: 'Toutes', leboncoin: 'Leboncoin', vinted: 'Vinted' })[btn.dataset.tab] + ` (${n})`;
+  });
+  $('rows').innerHTML = filtered.map(l => {
+    const pubs = state.publications.filter(p => p.listingId === l.id);
+    const badges = pubs.map(p => {
+      const icon = p.platform === 'leboncoin' ? 'fa-solid fa-bullhorn' : 'fa-brands fa-vinted';
+      const ok = p.status === 'published';
+      return `<span class="pf-badge ${p.platform} ${ok ? 'ok' : p.status === 'failed' ? 'bad' : ''}" title="${escapeHtml(p.platform + ' · ' + p.status)}">
+        <i class="${icon}"></i><span>${ok ? 'en ligne' : p.status}</span>
+      </span>`;
+    }).join(' ');
+    return `<tr class="${selectedIds.has(l.id) ? 'row-selected' : ''}">
+      <td><input type="checkbox" class="row-check" data-id="${l.id}" ${selectedIds.has(l.id) ? 'checked' : ''} /></td>
+      <td>${escapeHtml(l.title)}<div class="muted">${l.category || ''}${l.delivery ? ' · Livraison' : ''} · ${l.images.length} photo(s)</div>
+        ${refreshBadge(l)}
+        ${l.images.length ? `<div class="thumbs">${l.images.map(src => `<img src="${escapeHtml(src)}" loading="lazy" onerror="this.style.display='none'" data-zoom="${escapeHtml(src)}" />`).join('')}</div>` : ''}</td>
+      <td>${l.price ? `${l.price.toFixed(2)} €` : '—'}</td>
+      <td>${tag(l.status, l.status === 'published' ? 'ok' : l.status === 'paused' ? 'bad' : '')}</td>
+      <td class="center">${badges || '—'}</td>
+      <td><div class="actions-cell">
+        <button class="secondary icon-btn" data-act="publish" data-id="${l.id}" title="Publier"><i class="fa-solid fa-upload"></i>Publier</button>
+        ${l.status !== 'paused' ? `<button class="secondary icon-btn" data-act="pause" data-id="${l.id}" title="Mettre en pause"><i class="fa-solid fa-pause"></i>Pause</button>` : ''}
+        <button class="secondary icon-btn" data-act="renew" data-id="${l.id}" title="Renouveler"><i class="fa-solid fa-rotate"></i>Renouveler</button>
+        <button class="secondary icon-btn" data-act="refresh" data-id="${l.id}" title="Mettre à jour depuis Leboncoin"><i class="fa-solid fa-arrows-rotate"></i>MàJ</button>
+        <button class="danger icon-btn" data-act="delete" data-id="${l.id}" title="Supprimer"><i class="fa-solid fa-trash"></i>Supprimer</button>
+      </div></td></tr>`;
+  }).join('');
+  $('empty').style.display = filtered.length ? 'none' : 'block';
+  $('empty').textContent = activeTab === 'paused' ? 'Aucune annonce en pause.' : activeTab === 'published' ? 'Aucune annonce en ligne.' : 'Aucune annonce.';
+  $('job-rows').innerHTML = state.jobs.map(j => `<tr>
+      <td>${j.type}</td><td>${j.platform}</td><td>${tag(j.status, j.status === 'done' ? 'ok' : j.status === 'failed' ? 'bad' : '')}</td>
+      <td class="muted">${new Date(j.createdAt).toLocaleString('fr-FR')}</td><td class="muted">${escapeHtml(j.error || '')}</td></tr>`).join('');
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+function refreshBadge(l) {
+  if (!l.lastRefreshedAt) return '<span class="refresh-date none" title="Jamais rafraîchi"><i class="fa-regular fa-clock"></i> jamais</span>';
+  const days = Math.floor((Date.now() - new Date(l.lastRefreshedAt).getTime()) / 86400000);
+  const cls = days <= 4 ? 'fresh' : days <= 7 ? 'mid' : 'old';
+  const label = days === 0 ? "aujourd'hui" : days === 1 ? 'hier' : `${days} j`;
+  return `<span class="refresh-date ${cls}" title="Dernier refresh : ${new Date(l.lastRefreshedAt).toLocaleString('fr-FR')}"><i class="fa-solid fa-rotate"></i> ${label}</span>`;
+}
+
+$('btn-create').onclick = async () => {
+  try {
+    await api('/listings', { method: 'POST', body: JSON.stringify({
+      title: $('f-title').value, description: $('f-description').value, price: Number($('f-price').value || 0),
+      category: $('f-category').value, delivery: $('f-delivery').value === 'true',
+      images: $('f-images').value.split('\n').map(s => s.trim()).filter(Boolean),
+    })});
+    ['f-title','f-description','f-price','f-category','f-images'].forEach(id => $(id).value = '');
+    toast('Annonce créée'); await refresh();
+  } catch (e) { toast(e.message); }
+};
+
+$('btn-generate').onclick = async () => {
+  try {
+    const r = await api('/ai/generate', { method: 'POST', body: JSON.stringify({
+      title: $('f-title').value, description: $('f-description').value, category: $('f-category').value, both: true,
+    })});
+    $('f-title').value = r.leboncoin.title;
+    $('f-description').value = r.leboncoin.description + '\n\n--- Vinted ---\n' + r.vinted.description;
+    toast('Descriptions générées');
+  } catch (e) { toast(e.message); }
+};
+
+document.addEventListener('change', (e) => {
+  const check = e.target.closest('input.row-check');
+  if (check) {
+    if (check.checked) selectedIds.add(check.dataset.id);
+    else selectedIds.delete(check.dataset.id);
+    check.closest('tr').classList.toggle('row-selected', check.checked);
+    return;
+  }
+  if (e.target.id === 'select-all') {
+    const filtered = state.listings.filter(l =>
+      activeTab === 'all' ? true : activeTab === 'paused' ? l.status === 'paused' : l.status !== 'paused'
+    );
+    filtered.forEach(l => e.target.checked ? selectedIds.add(l.id) : selectedIds.delete(l.id));
+    render();
+  }
+});
+
+$('btn-renew-selection').onclick = async () => {
+  const ids = [...selectedIds];
+  if (!ids.length) { toast('Sélectionne au moins une annonce'); return; }
+  try {
+    const r = await api('/renew', { method: 'POST', body: JSON.stringify({
+      listingIds: ids,
+      platforms: ['leboncoin'],
+      autoSubmit: $('renew-mode').value === 'auto',
+      delaySeconds: Number($('renew-delay').value || 20),
+    }) });
+    const count = r.jobs.filter(j => j.type === 'publish').length;
+    toast(`${count} annonce(s) en renouvellement${count > 1 ? ` — ${$('renew-delay').value}s entre chacune` : ' (démarre immédiatement)'}`);
+    selectedIds.clear();
+    await refresh();
+  } catch (e) { toast(e.message); }
+};
+
+$('tabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('button[data-tab]');
+  if (!tab) return;
+  activeTab = tab.dataset.tab;
+  render();
+});
+
+document.body.addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const { act, id } = btn.dataset;
+  try {
+    if (act === 'publish') await api('/publish', { method: 'POST', body: JSON.stringify({ listingId: id, platforms: ['leboncoin','vinted'] }) });
+    if (act === 'renew') await api('/renew', { method: 'POST', body: JSON.stringify({ listingId: id }) });
+    if (act === 'refresh') await api('/refresh', { method: 'POST', body: JSON.stringify({ listingId: id, platform: 'leboncoin' }) });
+    if (act === 'pause') await api('/pause', { method: 'POST', body: JSON.stringify({ listingId: id, platforms: ['leboncoin'] }) });
+    if (act === 'delete') await api('/delete', { method: 'POST', body: JSON.stringify({ listingId: id, platforms: ['leboncoin','vinted'] }) });
+    toast('Tâche en file d’attente — l’extension va l’exécuter'); await refresh();
+  } catch (err) { toast(err.message); }
+});
+
+$('btn-enrich').onclick = async () => {
+  try { const r = await api('/enrich', { method: 'POST', body: JSON.stringify({ platform: 'leboncoin' }) }); toast(`${r.jobs.length} annonce(s) en file — l'extension va les ouvrir`); await refresh(); }
+  catch (e) { toast(e.message); }
+};
+$('btn-import').onclick = async () => {
+  try { const r = await api('/sync/import', { method: 'POST' }); toast(`${r.imported} annonce(s) importée(s)`); await refresh(); }
+  catch (e) { toast(e.message); }
+};
+$('lightbox').onclick = () => { $('lightbox').style.display = 'none'; };
+document.addEventListener('click', (e) => {
+  const img = e.target.closest('img[data-zoom]');
+  if (!img) return;
+  $('lightbox-img').src = img.dataset.zoom;
+  $('lightbox').style.display = 'flex';
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('lightbox').style.display = 'none'; });
+
+$('btn-jobs').onclick = refresh;
+$('btn-purge').onclick = async () => {
+  try { const r = await api('/jobs?status=done,failed', { method: 'DELETE' }); toast(`${r.deleted} tâche(s) purgée(s)`); await refresh(); }
+  catch (e) { toast(e.message); }
+};
+$('btn-purge-all').onclick = async () => {
+  try { const r = await api('/jobs?status=all', { method: 'DELETE' }); toast(`${r.deleted} tâche(s) purgée(s)`); await refresh(); }
+  catch (e) { toast(e.message); }
+};
+$('btn-maintenance').onclick = async () => { try { console.log(await api('/maintenance', { method: 'POST' })); await refresh(); } catch (e) { toast(e.message); } };
+
+$('btn-config').onclick = async () => {
+  try {
+    await api('/config', { method: 'PATCH', body: JSON.stringify({
+      aiProvider: $('c-provider').value, aiModel: $('c-model').value, aiBaseUrl: $('c-baseurl').value,
+      aiApiKey: $('c-key').value || undefined,
+      renewAfterDays: Number($('c-renew').value || 30), autoSubmit: $('c-autosubmit').value === 'true',
+    })});
+    $('c-key').value = ''; toast('Configuration enregistrée');
+  } catch (e) { toast(e.message); }
+};
+
+(async () => {
+  try {
+    const c = await api('/config');
+    $('c-provider').value = c.aiProvider; $('c-model').value = c.aiModel; $('c-baseurl').value = c.aiBaseUrl;
+    $('c-renew').value = c.renewAfterDays; $('c-autosubmit').value = String(c.autoSubmit);
+  } catch {}
+  await refresh();
+  setInterval(refresh, 20000);
+})();
+</script>
+</body>
+</html>

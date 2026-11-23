@@ -1,0 +1,21 @@
+{
+  "name": "@fluxlibre/extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm build && pnpm build:content --watch",
+    "build": "pnpm build:main && pnpm build:content",
+    "build:main": "vite build",
+    "build:content": "node build-content.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fluxlibre/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
+  }
+}

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FluxLibre</title>
+<style>
+  body { width:280px; margin:0; font:14px/1.4 system-ui,sans-serif; color:#e8eaf0; background:#14171c; padding:14px }
+  h1 { font-size:17px; margin:0 0 10px } h1 span { color:#6ee7b7 }
+  .card { background:#1d2129; border:1px solid #2a2f38; border-radius:8px; padding:10px; margin-bottom:10px }
+  .muted { color:#9aa3b2; font-size:12px }
+  button { width:100%; margin-top:6px; padding:8px; border:0; border-radius:7px; background:#6ee7b7; color:#06281d; font-weight:700; cursor:pointer }
+  button.secondary { background:#2a2f38; color:#e8eaf0 }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#f87171; margin-right:6px }
+  .dot.on { background:#6ee7b7 }
+</style>
+</head>
+<body>
+  <h1>Flux<span>Libre</span></h1>
+  <div class="card"><span class="dot" id="dot"></span><span id="status">Vérification…</span></div>
+  <div class="card"><div class="muted">Dernière synchro</div><div id="lastsync">—</div></div>
+  <div class="card"><div class="muted">Tâches récentes</div><div id="jobs">—</div></div>
+  <button id="dashboard">Ouvrir le dashboard</button>
+  <button class="secondary" id="sync">Synchroniser maintenant</button>
+  <button class="secondary" id="options">Options</button>
+  <script type="module" src="/src/popup/popup.ts"></script>
+</body>
+</html>
