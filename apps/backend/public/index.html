@@ -38,6 +38,9 @@
   .sub-tabs button.active { color:var(--accent); border-bottom-color:var(--accent) }
   .tab-content { display:none }
   .tab-content.active { display:block }
+  .status-tabs { display:flex; gap:6px; margin-bottom:12px; padding:4px; background:#0e1116; border:1px solid var(--line); border-radius:var(--radius-sm) }
+  .status-tabs button { background:none; border:0; color:var(--muted); padding:6px 12px; border-radius:6px; font-size:12px; font-weight:700 }
+  .status-tabs button.active { background:var(--panel-2); color:var(--text) }
   h2 { margin:0 0 18px; font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:1.6px; display:flex; align-items:center; gap:8px }
   h2::before { content:""; width:4px; height:14px; border-radius:4px; background:var(--accent) }
 
@@ -156,6 +159,11 @@
       <span class="muted">s entre chaque</span>
       <button class="btn-renew-selection" data-platform="leboncoin">Renouveler la sélection</button>
     </div>
+    <div class="status-tabs" data-platform="leboncoin">
+      <button data-status="published" class="active">En ligne</button>
+      <button data-status="paused">En pause</button>
+      <button data-status="all">Toutes</button>
+    </div>
     <table><thead><tr><th></th><th>Titre</th><th>Prix</th><th>Statut</th><th>Actions</th></tr></thead>
     <tbody id="rows-leboncoin"></tbody></table>
     <p class="muted" id="empty-leboncoin">Aucune annonce Leboncoin.</p>
@@ -176,6 +184,11 @@
       <input type="number" class="renew-delay" data-platform="vinted" value="20" min="5" max="300" title="Délai entre deux annonces" />
       <span class="muted">s entre chaque</span>
       <button class="btn-renew-selection" data-platform="vinted" style="background:linear-gradient(180deg,#5ee9d0 0%,#2fbfa8 100%)">Renouveler la sélection</button>
+    </div>
+    <div class="status-tabs" data-platform="vinted">
+      <button data-status="published" class="active">En ligne</button>
+      <button data-status="paused">En pause</button>
+      <button data-status="all">Toutes</button>
     </div>
     <table><thead><tr><th></th><th>Titre</th><th>Prix</th><th>Statut</th><th>Actions</th></tr></thead>
     <tbody id="rows-vinted"></tbody></table>
@@ -285,14 +298,29 @@ document.getElementById('sub-tabs').addEventListener('click', e => {
 });
 
 const selectedByPlatform = { leboncoin: new Set(), vinted: new Set() };
+const statusFilter = { leboncoin: 'published', vinted: 'published' };
+
+document.querySelectorAll('.status-tabs').forEach(bar => {
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('button[data-status]');
+    if (!b) return;
+    statusFilter[bar.dataset.platform] = b.dataset.status;
+    bar.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+    render();
+  });
+});
 
 function render() {
   for (const platform of ['leboncoin', 'vinted']) {
     const rows = $(`rows-${platform}`);
     const empty = $(`empty-${platform}`);
-    const listings = state.listings.filter(l =>
-      state.publications.some(p => p.listingId === l.id && p.platform === platform),
-    );
+    const listings = state.listings.filter(l => {
+      if (!state.publications.some(p => p.listingId === l.id && p.platform === platform)) return false;
+      const f = statusFilter[platform];
+      if (f === 'paused') return l.status === 'paused';
+      if (f === 'published') return l.status !== 'paused';
+      return true;
+    });
     const selected = selectedByPlatform[platform];
     rows.innerHTML = listings.map(l => {
       const pub = state.publications.find(p => p.listingId === l.id && p.platform === platform);
