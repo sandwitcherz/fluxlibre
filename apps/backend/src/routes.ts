@@ -13,7 +13,7 @@ import {
   type Platform,
   type Publication,
 } from '@fluxlibre/shared';
-import { store } from './db.js';
+import { db, store } from './db.js';
 import { getConfig, publicConfig, saveConfig } from './config.js';
 import { generateListing } from './services/ai.js';
 import { editImage, prepareProductPhoto } from './services/images.js';
@@ -538,9 +538,10 @@ api.post(
   }),
 );
 
-api.post('/sync/import', (_req, res) => {
+api.post('/sync/import', (req, res) => {
+  const requested = typeof req.body?.platform === 'string' ? [req.body.platform as Platform] : PLATFORMS;
   let imported = 0;
-  for (const platform of PLATFORMS) {
+  for (const platform of requested) {
     const raw = store.getSetting(`sync:${platform}`);
     if (!raw) continue;
     try {
@@ -754,6 +755,14 @@ api.get('/debug', (_req, res) => {
   } catch {
     res.json({ debug: raw });
   }
+});
+
+api.delete('/publications/:id', (req, res) => {
+  const id = String(req.params.id ?? '');
+  const before = db.prepare('SELECT * FROM publications WHERE id = ?').get(id);
+  if (!before) return notFound(res, 'Publication');
+  db.prepare('DELETE FROM publications WHERE id = ?').run(id);
+  res.status(204).end();
 });
 
 api.patch('/publications/:id', (req, res) => {
