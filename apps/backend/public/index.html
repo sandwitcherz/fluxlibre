@@ -24,6 +24,20 @@
 
   main { max-width:1180px; margin:0 auto; padding:28px }
   section { background:linear-gradient(180deg,var(--panel) 0%,var(--panel-2) 100%); border:1px solid var(--line); border-radius:var(--radius); padding:22px; margin-bottom:22px; box-shadow:var(--shadow) }
+  .panel-leboncoin { border-left:3px solid #ff9d4d }
+  .panel-vinted { border-left:3px solid #5ee9d0 }
+
+  /* Onglets horizontaux (plateforme) + sous-onglets (section) */
+  .top-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:0 }
+  .top-tabs button { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border:1px solid var(--line); border-radius:10px 10px 0 0; background:var(--panel); color:var(--muted); font-size:14px; font-weight:800 }
+  .top-tabs button.active { color:var(--text); border-bottom-color:transparent; background:var(--panel-2) }
+  .top-tabs button[data-platform="leboncoin"].active { color:#ff9d4d; border-color:rgba(255,157,77,.5); border-bottom-color:transparent }
+  .top-tabs button[data-platform="vinted"].active { color:#5ee9d0; border-color:rgba(94,233,208,.5); border-bottom-color:transparent }
+  .sub-tabs { display:flex; gap:6px; padding:10px 12px 0; background:var(--panel-2); border:1px solid var(--line); border-top:0; border-radius:0 0 10px 10px }
+  .sub-tabs button { background:none; border:0; border-bottom:2px solid transparent; color:var(--muted); padding:8px 14px; border-radius:0; font-weight:700 }
+  .sub-tabs button.active { color:var(--accent); border-bottom-color:var(--accent) }
+  .tab-content { display:none }
+  .tab-content.active { display:block }
   h2 { margin:0 0 18px; font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:1.6px; display:flex; align-items:center; gap:8px }
   h2::before { content:""; width:4px; height:14px; border-radius:4px; background:var(--accent) }
 
@@ -115,6 +129,61 @@
   <div class="muted" id="status">Connexion…</div>
 </header>
 <main>
+  <div class="top-tabs" id="top-tabs">
+    <button data-platform="leboncoin" class="active"><i class="fa-solid fa-bullhorn"></i> Leboncoin</button>
+    <button data-platform="vinted"><i class="fa-brands fa-vinted"></i> Vinted</button>
+  </div>
+  <div class="sub-tabs" id="sub-tabs">
+    <button data-section="annonces" class="active"><i class="fa-solid fa-list"></i> Annonces</button>
+    <button data-section="creation"><i class="fa-solid fa-plus"></i> Nouvelle annonce</button>
+    <button data-section="jobs"><i class="fa-solid fa-clock-rotate-left"></i> File d'attente</button>
+    <button data-section="config"><i class="fa-solid fa-gear"></i> Configuration</button>
+  </div>
+
+  <div class="tab-content active" data-content="leboncoin" data-sub="annonces">
+  <section class="panel-leboncoin">
+    <h2 style="color:#ff9d4d"><i class="fa-solid fa-bullhorn"></i> Annonces Leboncoin</h2>
+    <button id="btn-sync-lbc"><i class="fa-solid fa-sync"></i> Synchroniser Leboncoin</button>
+    <button class="secondary" id="btn-enrich-lbc"><i class="fa-solid fa-images"></i> Récupérer les photos</button>
+    <button class="secondary" id="btn-import-lbc"><i class="fa-solid fa-file-import"></i> Importer la synchro</button>
+    <div class="bulk-bar">
+      <label class="inline"><input type="checkbox" class="select-all" data-platform="leboncoin" /> Tout sélectionner</label>
+      <select class="renew-mode" data-platform="leboncoin" title="Mode de renouvellement">
+        <option value="manual">Manuel (je valide)</option>
+        <option value="auto">Auto (dépose sans booster)</option>
+      </select>
+      <input type="number" class="renew-delay" data-platform="leboncoin" value="20" min="5" max="300" title="Délai entre deux annonces" />
+      <span class="muted">s entre chaque</span>
+      <button class="btn-renew-selection" data-platform="leboncoin">Renouveler la sélection</button>
+    </div>
+    <table><thead><tr><th></th><th>Titre</th><th>Prix</th><th>Statut</th><th>Actions</th></tr></thead>
+    <tbody id="rows-leboncoin"></tbody></table>
+    <p class="muted" id="empty-leboncoin">Aucune annonce Leboncoin.</p>
+  </section>
+  </div>
+
+  <div class="tab-content" data-content="vinted" data-sub="annonces">
+  <section class="panel-vinted">
+    <h2 style="color:#5ee9d0"><i class="fa-brands fa-vinted"></i> Annonces Vinted</h2>
+    <button id="btn-sync-vinted" style="background:linear-gradient(180deg,#5ee9d0 0%,#2fbfa8 100%)"><i class="fa-solid fa-sync"></i> Synchroniser Vinted</button>
+    <button class="secondary" id="btn-import-vinted"><i class="fa-solid fa-file-import"></i> Importer la synchro</button>
+    <div class="bulk-bar">
+      <label class="inline"><input type="checkbox" class="select-all" data-platform="vinted" /> Tout sélectionner</label>
+      <select class="renew-mode" data-platform="vinted" title="Mode de renouvellement">
+        <option value="manual">Manuel (je valide)</option>
+        <option value="auto">Auto</option>
+      </select>
+      <input type="number" class="renew-delay" data-platform="vinted" value="20" min="5" max="300" title="Délai entre deux annonces" />
+      <span class="muted">s entre chaque</span>
+      <button class="btn-renew-selection" data-platform="vinted" style="background:linear-gradient(180deg,#5ee9d0 0%,#2fbfa8 100%)">Renouveler la sélection</button>
+    </div>
+    <table><thead><tr><th></th><th>Titre</th><th>Prix</th><th>Statut</th><th>Actions</th></tr></thead>
+    <tbody id="rows-vinted"></tbody></table>
+    <p class="muted" id="empty-vinted">Aucune annonce Vinted.</p>
+  </section>
+  </div>
+
+  <div class="tab-content" data-sub="creation">
   <section>
     <h2>Nouvelle annonce</h2>
     <div class="grid">
@@ -134,38 +203,9 @@
     <button id="btn-generate">Générer avec l'IA</button>
     <button id="btn-create">Créer l'annonce</button>
   </section>
+  </div>
 
-  <section>
-    <h2>Annonces</h2>
-    <button id="btn-sync"><i class="fa-solid fa-sync"></i> Synchroniser Leboncoin</button>
-    <button class="secondary" id="btn-enrich"><i class="fa-solid fa-images"></i> Récupérer les photos</button>
-    <button class="secondary" id="btn-import"><i class="fa-solid fa-file-import"></i> Importer la synchro</button>
-    <div class="tabs" id="tabs">
-      <button data-tab="published" class="active">En ligne</button>
-      <button data-tab="paused">En pause</button>
-      <button data-tab="all">Toutes</button>
-      <button data-tab="leboncoin">Leboncoin</button>
-      <button data-tab="vinted">Vinted</button>
-    </div>
-    <div class="bulk-bar">
-      <label class="inline"><input type="checkbox" id="select-all" /> Tout sélectionner</label>
-      <select id="renew-platform" title="Plateforme cible">
-        <option value="leboncoin">Leboncoin</option>
-        <option value="vinted">Vinted</option>
-      </select>
-      <select id="renew-mode" title="Mode de renouvellement">
-        <option value="manual">Manuel (je valide)</option>
-        <option value="auto">Auto (dépose sans booster)</option>
-      </select>
-      <input type="number" id="renew-delay" value="20" min="5" max="300" title="Délai entre deux annonces (secondes)" />
-      <span class="muted">s entre chaque</span>
-      <button id="btn-renew-selection">Renouveler la sélection</button>
-    </div>
-    <table><thead><tr><th></th><th>Titre</th><th>Prix</th><th>Statut</th><th>Plateformes</th><th>Actions</th></tr></thead>
-    <tbody id="rows"></tbody></table>
-    <p class="muted" id="empty">Aucune annonce.</p>
-  </section>
-
+  <div class="tab-content" data-sub="jobs">
   <section>
     <h2>File d'attente</h2>
     <button id="btn-jobs">Rafraîchir</button>
@@ -175,7 +215,9 @@
     <table><thead><tr><th>Type</th><th>Plateforme</th><th>Statut</th><th>Créée</th><th>Erreur</th></tr></thead>
     <tbody id="job-rows"></tbody></table>
   </section>
+  </div>
 
+  <div class="tab-content" data-sub="config">
   <section>
     <h2>Configuration</h2>
     <div class="grid">
@@ -188,6 +230,7 @@
     </div>
     <button id="btn-config">Enregistrer</button>
   </section>
+  </div>
 </main>
 <div id="lightbox"><img id="lightbox-img" alt="Aperçu" /></div>
 <div id="toast"></div>
@@ -214,68 +257,69 @@ async function refresh() {
   } catch (e) { $('status').textContent = 'Erreur: ' + e.message; }
 }
 
-let activeTab = 'published';
-const selectedIds = new Set();
+let activePlatform = 'leboncoin';
+let activeSection = 'annonces';
+
+function updateTabs() {
+  document.querySelectorAll('#top-tabs button').forEach(b =>
+    b.classList.toggle('active', b.dataset.platform === activePlatform));
+  document.querySelectorAll('#sub-tabs button').forEach(b =>
+    b.classList.toggle('active', b.dataset.section === activeSection));
+  document.querySelectorAll('.tab-content').forEach(c => {
+    const platformOk = !c.dataset.content || c.dataset.content === activePlatform;
+    const sectionOk = c.dataset.sub === activeSection;
+    c.classList.toggle('active', platformOk && sectionOk);
+  });
+}
+document.getElementById('top-tabs').addEventListener('click', e => {
+  const b = e.target.closest('button[data-platform]');
+  if (!b) return;
+  activePlatform = b.dataset.platform;
+  updateTabs();
+});
+document.getElementById('sub-tabs').addEventListener('click', e => {
+  const b = e.target.closest('button[data-section]');
+  if (!b) return;
+  activeSection = b.dataset.section;
+  updateTabs();
+});
+
+const selectedByPlatform = { leboncoin: new Set(), vinted: new Set() };
 
 function render() {
-  const filtered = state.listings.filter(l => {
-    const pubs = state.publications.filter(p => p.listingId === l.id);
-    if (activeTab === 'leboncoin') return pubs.some(p => p.platform === 'leboncoin');
-    if (activeTab === 'vinted') return pubs.some(p => p.platform === 'vinted');
-    if (activeTab === 'all') return true;
-    if (activeTab === 'paused') return l.status === 'paused';
-    return l.status !== 'paused';
-  });
-  const counts = {
-    published: state.listings.filter(l => l.status !== 'paused').length,
-    paused: state.listings.filter(l => l.status === 'paused').length,
-    all: state.listings.length,
-    leboncoin: state.listings.filter(l => state.publications.some(p => p.listingId === l.id && p.platform === 'leboncoin')).length,
-    vinted: state.listings.filter(l => state.publications.some(p => p.listingId === l.id && p.platform === 'vinted')).length,
-  };
-  document.querySelectorAll('#tabs button').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tab === activeTab);
-    const n = counts[btn.dataset.tab] ?? 0;
-    btn.textContent = ({ published: 'En ligne', paused: 'En pause', all: 'Toutes', leboncoin: 'Leboncoin', vinted: 'Vinted' })[btn.dataset.tab] + ` (${n})`;
-  });
-  $('rows').innerHTML = filtered.map(l => {
-    const pubs = state.publications.filter(p => p.listingId === l.id);
-    const badges = pubs.map(p => {
-      const icon = p.platform === 'leboncoin' ? 'fa-solid fa-bullhorn' : 'fa-brands fa-vinted';
-      const ok = p.status === 'published';
-      return `<span class="pf-badge ${p.platform} ${ok ? 'ok' : p.status === 'failed' ? 'bad' : ''}" title="${escapeHtml(p.platform + ' · ' + p.status)}">
-        <i class="${icon}"></i><span>${ok ? 'en ligne' : p.status}</span>
-      </span>`;
-    }).join(' ');
-    return `<tr class="${selectedIds.has(l.id) ? 'row-selected' : ''}">
-      <td><input type="checkbox" class="row-check" data-id="${l.id}" ${selectedIds.has(l.id) ? 'checked' : ''} /></td>
-      <td>${escapeHtml(l.title)}<div class="muted">${l.category || ''}${l.delivery ? ' · Livraison' : ''} · ${l.images.length} photo(s)</div>
-        ${refreshBadge(l)}
-        ${l.images.length ? `<div class="thumbs">${l.images.map(src => `<img src="${escapeHtml(src)}" loading="lazy" onerror="this.style.display='none'" data-zoom="${escapeHtml(src)}" />`).join('')}</div>` : ''}</td>
-      <td>${l.price ? `${l.price.toFixed(2)} €` : '—'}</td>
-      <td>${tag(l.status, l.status === 'published' ? 'ok' : l.status === 'paused' ? 'bad' : '')}</td>
-      <td class="center">${badges || '—'}</td>
-      <td><div class="actions-cell">
-        <button class="secondary icon-btn" data-act="publish" data-id="${l.id}" data-platform="${platformOf(l)}" title="Publier sur ${platformOf(l)}"><i class="fa-solid fa-upload"></i>Publier</button>
-        ${l.status !== 'paused' ? `<button class="secondary icon-btn" data-act="pause" data-id="${l.id}" data-platform="${platformOf(l)}" title="Mettre en pause sur ${platformOf(l)}"><i class="fa-solid fa-pause"></i>Pause</button>` : ''}
-        <button class="secondary icon-btn" data-act="renew" data-id="${l.id}" data-platform="${platformOf(l)}" title="Renouveler sur ${platformOf(l)}"><i class="fa-solid fa-rotate"></i>Renouveler</button>
-        <button class="secondary icon-btn" data-act="refresh" data-id="${l.id}" data-platform="${platformOf(l)}" title="Mettre à jour depuis ${platformOf(l)}"><i class="fa-solid fa-arrows-rotate"></i>MàJ</button>
-        <button class="danger icon-btn" data-act="delete" data-id="${l.id}" data-platform="${platformOf(l)}" title="Supprimer de ${platformOf(l)}"><i class="fa-solid fa-trash"></i>Supprimer</button>
-      </div></td></tr>`;
-  }).join('');
-  $('empty').style.display = filtered.length ? 'none' : 'block';
-  $('empty').textContent = activeTab === 'paused' ? 'Aucune annonce en pause.' : activeTab === 'published' ? 'Aucune annonce en ligne.' : 'Aucune annonce.';
+  for (const platform of ['leboncoin', 'vinted']) {
+    const rows = $(`rows-${platform}`);
+    const empty = $(`empty-${platform}`);
+    const listings = state.listings.filter(l =>
+      state.publications.some(p => p.listingId === l.id && p.platform === platform),
+    );
+    const selected = selectedByPlatform[platform];
+    rows.innerHTML = listings.map(l => {
+      const pub = state.publications.find(p => p.listingId === l.id && p.platform === platform);
+      const ok = pub?.status === 'published';
+      return `<tr class="${selected.has(l.id) ? 'row-selected' : ''}">
+        <td><input type="checkbox" class="row-check" data-id="${l.id}" data-platform="${platform}" ${selected.has(l.id) ? 'checked' : ''} /></td>
+        <td>${escapeHtml(l.title)}<div class="muted">${l.category || ''}${l.delivery ? ' · Livraison' : ''} · ${l.images.length} photo(s)</div>
+          ${refreshBadge(l)}
+          ${l.images.length ? `<div class="thumbs">${l.images.map(src => `<img src="${escapeHtml(src)}" loading="lazy" onerror="this.style.display='none'" data-zoom="${escapeHtml(src)}" />`).join('')}</div>` : ''}</td>
+        <td>${l.price ? `${l.price.toFixed(2)} €` : '—'}</td>
+        <td>${tag(l.status, l.status === 'published' ? 'ok' : l.status === 'paused' ? 'bad' : '')}</td>
+        <td><div class="actions-cell">
+          <button class="secondary icon-btn" data-act="publish" data-id="${l.id}" data-platform="${platform}" title="Publier sur ${platform}"><i class="fa-solid fa-upload"></i>Publier</button>
+          ${l.status !== 'paused' ? `<button class="secondary icon-btn" data-act="pause" data-id="${l.id}" data-platform="${platform}" title="Mettre en pause"><i class="fa-solid fa-pause"></i>Pause</button>` : ''}
+          <button class="secondary icon-btn" data-act="renew" data-id="${l.id}" data-platform="${platform}" title="Renouveler sur ${platform}"><i class="fa-solid fa-rotate"></i>Renouveler</button>
+          <button class="secondary icon-btn" data-act="refresh" data-id="${l.id}" data-platform="${platform}" title="Mettre à jour depuis ${platform}"><i class="fa-solid fa-arrows-rotate"></i>MàJ</button>
+          <button class="danger icon-btn" data-act="delete" data-id="${l.id}" data-platform="${platform}" title="Supprimer de ${platform}"><i class="fa-solid fa-trash"></i>Supprimer</button>
+        </div></td></tr>`;
+    }).join('');
+    empty.style.display = listings.length ? 'none' : 'block';
+    empty.textContent = `Aucune annonce ${platform === 'leboncoin' ? 'Leboncoin' : 'Vinted'}.`;
+  }
   $('job-rows').innerHTML = state.jobs.map(j => `<tr>
       <td>${j.type}</td><td>${j.platform}</td><td>${tag(j.status, j.status === 'done' ? 'ok' : j.status === 'failed' ? 'bad' : '')}</td>
       <td class="muted">${new Date(j.createdAt).toLocaleString('fr-FR')}</td><td class="muted">${escapeHtml(j.error || '')}</td></tr>`).join('');
 }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
-
-function platformOf(l) {
-  const pubs = state.publications.filter(p => p.listingId === l.id);
-  if (pubs.length && pubs.every(p => p.platform === 'vinted')) return 'vinted';
-  return 'leboncoin';
-}
 
 function refreshBadge(l) {
   if (!l.lastRefreshedAt) return '<span class="refresh-date none" title="Jamais rafraîchi"><i class="fa-regular fa-clock"></i> jamais</span>';
@@ -312,42 +356,39 @@ $('btn-generate').onclick = async () => {
 document.addEventListener('change', (e) => {
   const check = e.target.closest('input.row-check');
   if (check) {
-    if (check.checked) selectedIds.add(check.dataset.id);
-    else selectedIds.delete(check.dataset.id);
+    const set = selectedByPlatform[check.dataset.platform];
+    if (check.checked) set.add(check.dataset.id);
+    else set.delete(check.dataset.id);
     check.closest('tr').classList.toggle('row-selected', check.checked);
     return;
   }
-  if (e.target.id === 'select-all') {
-    const filtered = state.listings.filter(l =>
-      activeTab === 'all' ? true : activeTab === 'paused' ? l.status === 'paused' : l.status !== 'paused'
+  if (e.target.matches('input.select-all')) {
+    const platform = e.target.dataset.platform;
+    const listings = state.listings.filter(l =>
+      state.publications.some(p => p.listingId === l.id && p.platform === platform),
     );
-    filtered.forEach(l => e.target.checked ? selectedIds.add(l.id) : selectedIds.delete(l.id));
+    listings.forEach(l => e.target.checked ? selectedByPlatform[platform].add(l.id) : selectedByPlatform[platform].delete(l.id));
     render();
   }
 });
 
-$('btn-renew-selection').onclick = async () => {
-  const ids = [...selectedIds];
-  if (!ids.length) { toast('Sélectionne au moins une annonce'); return; }
-  try {
-    const r = await api('/renew', { method: 'POST', body: JSON.stringify({
-      listingIds: ids,
-      platforms: [$('renew-platform').value],
-      autoSubmit: $('renew-mode').value === 'auto',
-      delaySeconds: Number($('renew-delay').value || 20),
-    }) });
-    const count = r.jobs.filter(j => j.type === 'publish').length;
-    toast(`${count} annonce(s) en renouvellement${count > 1 ? ` — ${$('renew-delay').value}s entre chacune` : ' (démarre immédiatement)'}`);
-    selectedIds.clear();
-    await refresh();
-  } catch (e) { toast(e.message); }
-};
-
-$('tabs').addEventListener('click', (e) => {
-  const tab = e.target.closest('button[data-tab]');
-  if (!tab) return;
-  activeTab = tab.dataset.tab;
-  render();
+document.querySelectorAll('button.btn-renew-selection').forEach(btn => {
+  btn.onclick = async () => {
+    const platform = btn.dataset.platform;
+    const ids = [...selectedByPlatform[platform]];
+    if (!ids.length) { toast(`Sélectionne au moins une annonce ${platform}`); return; }
+    try {
+      const mode = document.querySelector(`select.renew-mode[data-platform="${platform}"]`).value;
+      const delay = Number(document.querySelector(`input.renew-delay[data-platform="${platform}"]`).value || 20);
+      const r = await api('/renew', { method: 'POST', body: JSON.stringify({
+        listingIds: ids, platforms: [platform], autoSubmit: mode === 'auto', delaySeconds: delay,
+      }) });
+      const count = r.jobs.filter(j => j.type === 'publish').length;
+      toast(`${count} annonce(s) ${platform} en renouvellement${count > 1 ? ` — ${delay}s entre chacune` : ''}`);
+      selectedByPlatform[platform].clear();
+      await refresh();
+    } catch (e) { toast(e.message); }
+  };
 });
 
 document.body.addEventListener('click', async (e) => {
@@ -365,19 +406,25 @@ document.body.addEventListener('click', async (e) => {
   } catch (err) { toast(err.message); }
 });
 
-$('btn-sync').onclick = async () => {
-  try {
-    const r = await api('/sync', { method: 'POST', body: JSON.stringify({ platforms: ['leboncoin'] }) });
-    toast('Synchro lancée — l’extension va lire vos annonces');
-    await refresh();
-  } catch (e) { toast(e.message); }
-};
-$('btn-enrich').onclick = async () => {
-  try { const r = await api('/enrich', { method: 'POST', body: JSON.stringify({ platform: 'leboncoin' }) }); toast(`${r.jobs.length} annonce(s) en file — l'extension va les ouvrir`); await refresh(); }
-  catch (e) { toast(e.message); }
-};
-$('btn-import').onclick = async () => {
-  try { const r = await api('/sync/import', { method: 'POST', body: JSON.stringify({ platform: 'leboncoin' }) }); toast(`${r.imported} annonce(s) importée(s)`); await refresh(); }
+for (const platform of ['leboncoin', 'vinted']) {
+  const suffix = platform === 'leboncoin' ? 'lbc' : 'vinted';
+  $(`btn-sync-${suffix}`).onclick = async () => {
+    try {
+      await api('/sync', { method: 'POST', body: JSON.stringify({ platforms: [platform] }) });
+      toast(`Synchro ${platform} lancée`);
+      await refresh();
+    } catch (e) { toast(e.message); }
+  };
+  $(`btn-import-${suffix}`).onclick = async () => {
+    try {
+      const r = await api('/sync/import', { method: 'POST', body: JSON.stringify({ platform }) });
+      toast(`${r.imported} annonce(s) ${platform} importée(s)`);
+      await refresh();
+    } catch (e) { toast(e.message); }
+  };
+}
+$('btn-enrich-lbc').onclick = async () => {
+  try { const r = await api('/enrich', { method: 'POST', body: JSON.stringify({ platform: 'leboncoin' }) }); toast(`${r.jobs.length} annonce(s) en file`); await refresh(); }
   catch (e) { toast(e.message); }
 };
 $('lightbox').onclick = () => { $('lightbox').style.display = 'none'; };
@@ -417,6 +464,7 @@ $('btn-config').onclick = async () => {
     $('c-provider').value = c.aiProvider; $('c-model').value = c.aiModel; $('c-baseurl').value = c.aiBaseUrl;
     $('c-renew').value = c.renewAfterDays; $('c-autosubmit').value = String(c.autoSubmit);
   } catch {}
+  updateTabs();
   await refresh();
   setInterval(refresh, 20000);
 })();
