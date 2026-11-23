@@ -1,0 +1,65 @@
+name: Build FluxLibre
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Installer les dépendances
+        run: pnpm install --frozen-lockfile
+
+      - name: Vérifier les types
+        run: pnpm typecheck
+
+      - name: Compiler
+        run: pnpm build
+
+      - name: Archiver l'extension
+        run: |
+          cd apps/extension/dist
+          zip -r ../../../fluxlibre-extension.zip .
+
+      - name: Archiver le backend
+        run: |
+          cd apps/backend
+          zip -r ../../fluxlibre-backend.zip dist public package.json
+
+      - name: Publier les artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxlibre-build
+          path: |
+            fluxlibre-extension.zip
+            fluxlibre-backend.zip
+
+      - name: Release (uniquement sur push)
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.sha }}
+          name: Build ${{ github.ref_name }}
+          files: |
+            fluxlibre-extension.zip
+            fluxlibre-backend.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
