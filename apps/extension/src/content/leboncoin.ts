@@ -191,14 +191,27 @@ const adapter: Adapter = {
       document.querySelector<HTMLElement>('[contenteditable="true"]');
     const priceInput = document.querySelector<HTMLInputElement>('input[name="price"]');
     if (descriptionInput) await human.type(descriptionInput, listing.description);
+    let finalPrice: string | null = null;
     if (priceInput) {
-      await human.type(priceInput, String(listing.price));
-      // L'IA de Leboncoin peut écraser le prix quelques secondes plus tard :
-      // on revérifie et on réécrit notre prix si besoin.
+      const target = String(listing.price);
+      const ensurePrice = async (label: string) => {
+        const current = priceInput.value.replace(/[\s€]/g, '');
+        if (current !== target) {
+          console.log(`[FluxLibre] prix corrigé (${label}): ${current} -> ${target}`);
+          await human.type(priceInput, target);
+        }
+        finalPrice = priceInput.value.replace(/[\s€]/g, '');
+      };
+
+      await human.type(priceInput, target);
+      // L'IA de Leboncoin écrase le prix à des délais variables : on vérifie
+      // à 1,2 s, 3,5 s et 6 s, puis juste avant de quitter l'étape.
       await new Promise((r) => setTimeout(r, 1_200));
-      if (priceInput.value.replace(/\s/g, '') !== String(listing.price)) {
-        await human.type(priceInput, String(listing.price));
-      }
+      await ensurePrice('1.2s');
+      await new Promise((r) => setTimeout(r, 2_300));
+      await ensurePrice('3.5s');
+      await new Promise((r) => setTimeout(r, 2_500));
+      await ensurePrice('6s');
     }
 
     // Adresse de remise du bien : champ « Adresse » avec autocomplétion.
@@ -236,6 +249,13 @@ const adapter: Adapter = {
         }
       }
     }
+
+    // Dernière vérification du prix avant de quitter le formulaire.
+    if (priceInput && finalPrice !== String(listing.price)) {
+      await human.type(priceInput, String(listing.price));
+      finalPrice = priceInput.value.replace(/[\s€]/g, '');
+    }
+    console.log('[FluxLibre] prix final dans le formulaire:', finalPrice, '| attendu:', listing.price);
 
     // Étape livraison : cliquer « Continuer » pour arriver à l'écran de validation.
     setStep('publish/etape-livraison');
@@ -299,7 +319,7 @@ const adapter: Adapter = {
 
     // Le dépôt final (« Déposer sans booster mon annonce ») a déjà été cliqué
     // plus haut en mode auto : ne pas re-cliquer un « Publier » inexistant.
-    return { ok: true, url: location.href };
+    return { ok: true, url: location.href, data: { finalPrice } };
   },
 
   async renew(job) {
