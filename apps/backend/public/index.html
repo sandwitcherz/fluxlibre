@@ -127,6 +127,10 @@
     <textarea id="f-description" placeholder="État, mesures, matière…"></textarea>
     <label>Photos (URLs ou chemins locaux, un par ligne)</label>
     <textarea id="f-images" style="min-height:60px" placeholder="C:\photos\veste.jpg"></textarea>
+    <select id="ai-platform" title="Plateforme pour l'IA">
+      <option value="leboncoin">IA pour Leboncoin</option>
+      <option value="vinted">IA pour Vinted</option>
+    </select>
     <button id="btn-generate">Générer avec l'IA</button>
     <button id="btn-create">Créer l'annonce</button>
   </section>
@@ -145,6 +149,10 @@
     </div>
     <div class="bulk-bar">
       <label class="inline"><input type="checkbox" id="select-all" /> Tout sélectionner</label>
+      <select id="renew-platform" title="Plateforme cible">
+        <option value="leboncoin">Leboncoin</option>
+        <option value="vinted">Vinted</option>
+      </select>
       <select id="renew-mode" title="Mode de renouvellement">
         <option value="manual">Manuel (je valide)</option>
         <option value="auto">Auto (dépose sans booster)</option>
@@ -248,11 +256,11 @@ function render() {
       <td>${tag(l.status, l.status === 'published' ? 'ok' : l.status === 'paused' ? 'bad' : '')}</td>
       <td class="center">${badges || '—'}</td>
       <td><div class="actions-cell">
-        <button class="secondary icon-btn" data-act="publish" data-id="${l.id}" title="Publier"><i class="fa-solid fa-upload"></i>Publier</button>
-        ${l.status !== 'paused' ? `<button class="secondary icon-btn" data-act="pause" data-id="${l.id}" title="Mettre en pause"><i class="fa-solid fa-pause"></i>Pause</button>` : ''}
-        <button class="secondary icon-btn" data-act="renew" data-id="${l.id}" title="Renouveler"><i class="fa-solid fa-rotate"></i>Renouveler</button>
-        <button class="secondary icon-btn" data-act="refresh" data-id="${l.id}" title="Mettre à jour depuis Leboncoin"><i class="fa-solid fa-arrows-rotate"></i>MàJ</button>
-        <button class="danger icon-btn" data-act="delete" data-id="${l.id}" title="Supprimer"><i class="fa-solid fa-trash"></i>Supprimer</button>
+        <button class="secondary icon-btn" data-act="publish" data-id="${l.id}" data-platform="${platformOf(l)}" title="Publier sur ${platformOf(l)}"><i class="fa-solid fa-upload"></i>Publier</button>
+        ${l.status !== 'paused' ? `<button class="secondary icon-btn" data-act="pause" data-id="${l.id}" data-platform="${platformOf(l)}" title="Mettre en pause sur ${platformOf(l)}"><i class="fa-solid fa-pause"></i>Pause</button>` : ''}
+        <button class="secondary icon-btn" data-act="renew" data-id="${l.id}" data-platform="${platformOf(l)}" title="Renouveler sur ${platformOf(l)}"><i class="fa-solid fa-rotate"></i>Renouveler</button>
+        <button class="secondary icon-btn" data-act="refresh" data-id="${l.id}" data-platform="${platformOf(l)}" title="Mettre à jour depuis ${platformOf(l)}"><i class="fa-solid fa-arrows-rotate"></i>MàJ</button>
+        <button class="danger icon-btn" data-act="delete" data-id="${l.id}" data-platform="${platformOf(l)}" title="Supprimer de ${platformOf(l)}"><i class="fa-solid fa-trash"></i>Supprimer</button>
       </div></td></tr>`;
   }).join('');
   $('empty').style.display = filtered.length ? 'none' : 'block';
@@ -262,6 +270,12 @@ function render() {
       <td class="muted">${new Date(j.createdAt).toLocaleString('fr-FR')}</td><td class="muted">${escapeHtml(j.error || '')}</td></tr>`).join('');
 }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+function platformOf(l) {
+  const pubs = state.publications.filter(p => p.listingId === l.id);
+  if (pubs.length && pubs.every(p => p.platform === 'vinted')) return 'vinted';
+  return 'leboncoin';
+}
 
 function refreshBadge(l) {
   if (!l.lastRefreshedAt) return '<span class="refresh-date none" title="Jamais rafraîchi"><i class="fa-regular fa-clock"></i> jamais</span>';
@@ -285,12 +299,13 @@ $('btn-create').onclick = async () => {
 
 $('btn-generate').onclick = async () => {
   try {
+    const platform = $('ai-platform').value;
     const r = await api('/ai/generate', { method: 'POST', body: JSON.stringify({
-      title: $('f-title').value, description: $('f-description').value, category: $('f-category').value, both: true,
+      title: $('f-title').value, description: $('f-description').value, category: $('f-category').value, platform,
     })});
-    $('f-title').value = r.leboncoin.title;
-    $('f-description').value = r.leboncoin.description + '\n\n--- Vinted ---\n' + r.vinted.description;
-    toast('Descriptions générées');
+    $('f-title').value = r.title;
+    $('f-description').value = r.description;
+    toast(`Description générée pour ${platform}`);
   } catch (e) { toast(e.message); }
 };
 
@@ -317,7 +332,7 @@ $('btn-renew-selection').onclick = async () => {
   try {
     const r = await api('/renew', { method: 'POST', body: JSON.stringify({
       listingIds: ids,
-      platforms: ['leboncoin'],
+      platforms: [$('renew-platform').value],
       autoSubmit: $('renew-mode').value === 'auto',
       delaySeconds: Number($('renew-delay').value || 20),
     }) });
@@ -338,14 +353,15 @@ $('tabs').addEventListener('click', (e) => {
 document.body.addEventListener('click', async (e) => {
   const btn = e.target.closest('button[data-act]');
   if (!btn) return;
-  const { act, id } = btn.dataset;
+  const { act, id, platform } = btn.dataset;
+  const p = platform || 'leboncoin';
   try {
-    if (act === 'publish') await api('/publish', { method: 'POST', body: JSON.stringify({ listingId: id, platforms: ['leboncoin','vinted'] }) });
-    if (act === 'renew') await api('/renew', { method: 'POST', body: JSON.stringify({ listingId: id }) });
-    if (act === 'refresh') await api('/refresh', { method: 'POST', body: JSON.stringify({ listingId: id, platform: 'leboncoin' }) });
-    if (act === 'pause') await api('/pause', { method: 'POST', body: JSON.stringify({ listingId: id, platforms: ['leboncoin'] }) });
-    if (act === 'delete') await api('/delete', { method: 'POST', body: JSON.stringify({ listingId: id, platforms: ['leboncoin','vinted'] }) });
-    toast('Tâche en file d’attente — l’extension va l’exécuter'); await refresh();
+    if (act === 'publish') await api('/publish', { method: 'POST', body: JSON.stringify({ listingId: id, platforms: [p] }) });
+    if (act === 'renew') await api('/renew', { method: 'POST', body: JSON.stringify({ listingId: id, platforms: [p] }) });
+    if (act === 'refresh') await api('/refresh', { method: 'POST', body: JSON.stringify({ listingId: id, platform: p }) });
+    if (act === 'pause') await api('/pause', { method: 'POST', body: JSON.stringify({ listingId: id, platforms: [p] }) });
+    if (act === 'delete') await api('/delete', { method: 'POST', body: JSON.stringify({ listingId: id, platforms: [p] }) });
+    toast(`Tâche ${p} en file d’attente`); await refresh();
   } catch (err) { toast(err.message); }
 });
 

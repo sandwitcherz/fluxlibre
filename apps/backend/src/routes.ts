@@ -321,7 +321,7 @@ api.post(
     const parsed = z
       .object({
         listingId: z.string().min(1),
-        platforms: z.array(platformSchema).min(1).default(PLATFORMS),
+        platforms: z.array(platformSchema).min(1).default(['leboncoin']),
         autoSubmit: z.boolean().optional(),
       })
       .safeParse(req.body);
@@ -475,7 +475,7 @@ api.post(
     const parsed = z
       .object({
         listingId: z.string().min(1),
-        platforms: z.array(platformSchema).min(1).default(PLATFORMS),
+        platforms: z.array(platformSchema).min(1).default(['leboncoin']),
       })
       .safeParse(req.body);
     if (!parsed.success) return badRequest(res, parsed.error);
@@ -528,7 +528,7 @@ api.post(
   '/sync',
   asyncRoute(async (req, res) => {
     const parsed = z
-      .object({ platforms: z.array(platformSchema).min(1).default(PLATFORMS) })
+      .object({ platforms: z.array(platformSchema).min(1).default(['leboncoin']) })
       .safeParse(req.body ?? {});
     if (!parsed.success) return badRequest(res, parsed.error);
     const jobs = parsed.data.platforms.map((platform) =>
