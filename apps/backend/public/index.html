@@ -213,6 +213,7 @@
       <option value="leboncoin">IA pour Leboncoin</option>
       <option value="vinted">IA pour Vinted</option>
     </select>
+    <span class="muted">Fournisseur réglé dans l'onglet Configuration.</span>
     <button id="btn-generate">Générer avec l'IA</button>
     <button id="btn-create">Créer l'annonce</button>
   </section>
@@ -234,7 +235,7 @@
   <section>
     <h2>Configuration</h2>
     <div class="grid">
-      <div><label>Fournisseur IA</label><select id="c-provider"><option value="none">Aucun</option><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="ollama">Ollama</option></select></div>
+      <div><label>Fournisseur IA</label><select id="c-provider"><option value="none">Aucun</option><option value="gemini">Gemini (gratuit)</option><option value="groq">Groq (gratuit)</option><option value="ollama">Ollama (local)</option><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option></select></div>
       <div><label>Modèle</label><input id="c-model" /></div>
       <div><label>URL de base (optionnel)</label><input id="c-baseurl" /></div>
       <div><label>Clé API (stockée localement)</label><input id="c-key" type="password" /></div>

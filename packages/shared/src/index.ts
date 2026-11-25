@@ -102,7 +102,7 @@ export interface ImageEditRequest {
 
 export interface AppConfig {
   backendUrl: string;
-  aiProvider: 'none' | 'openai' | 'anthropic' | 'ollama';
+  aiProvider: 'none' | 'openai' | 'anthropic' | 'ollama' | 'gemini' | 'groq';
   aiModel: string;
   aiBaseUrl: string;
   autoSubmit: boolean;

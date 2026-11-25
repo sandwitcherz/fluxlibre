@@ -74,6 +74,46 @@ async function callProvider(system: string, user: string): Promise<string> {
     const data = (await response.json()) as { message?: { content?: string } };
     return data.message?.content ?? '';
   }
+  if (config.aiProvider === 'gemini') {
+    if (!config.aiApiKey) throw new Error('Clé API Gemini manquante (FLUXLIBRE_AI_KEY).');
+    const model = config.aiModel || 'gemini-2.0-flash';
+    const response = await fetch(
+      `${config.aiBaseUrl || 'https://generativelanguage.googleapis.com'}/v1beta/models/${model}:generateContent?key=${encodeURIComponent(config.aiApiKey)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: system }] },
+          contents: [{ role: 'user', parts: [{ text: user }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.4 },
+        }),
+      },
+    );
+    if (!response.ok) throw new Error(`Gemini ${response.status}: ${await response.text()}`);
+    const data = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    return data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
+  }
+  if (config.aiProvider === 'groq') {
+    if (!config.aiApiKey) throw new Error('Clé API Groq manquante (FLUXLIBRE_AI_KEY).');
+    const response = await fetch(`${config.aiBaseUrl || 'https://api.groq.com/openai'}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.aiApiKey}`,
+      },
+      body: JSON.stringify({
+        model: config.aiModel || 'llama-3.3-70b-versatile',
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+      }),
+    });
+    if (!response.ok) throw new Error(`Groq ${response.status}: ${await response.text()}`);
+    const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    return data.choices?.[0]?.message?.content ?? '';
+  }
   if (config.aiProvider === 'anthropic') {
     if (!config.aiApiKey) throw new Error('Clé API Anthropic manquante (FLUXLIBRE_AI_KEY).');
     const response = await fetch(`${config.aiBaseUrl || 'https://api.anthropic.com'}/v1/messages`, {
