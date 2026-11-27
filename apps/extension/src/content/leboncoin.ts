@@ -406,9 +406,11 @@ const adapter: Adapter = {
 
     const images = [...urls].slice(0, 20);
 
-    const description = [...document.querySelectorAll('[data-qa-id*="description" i], [class*="description" i]')]
-      .map((el) => (el.textContent ?? '').trim())
-      .find((text) => text.length > 40);
+    const description =
+      (document.querySelector('[data-qa-id="adview_description_container"]')?.textContent ?? '')
+        .replace(/Voir plus$/i, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim() || null;
 
     // Catégorie depuis le fil d'Ariane : les liens de catégorie ont un href
     // contenant /c/ ou /@/ ; on exclut les liens d'accessibilité et la nav.
@@ -505,19 +507,14 @@ const adapter: Adapter = {
         }
       }
     }
-    // Description : élément dédié, nettoyé du texte parasite (prix, dates, adresse…).
-    const rawDescription = [...document.querySelectorAll('[data-qa-id*="description" i], [class*="description" i]')]
-      .map((el) => (el.textContent ?? '').trim())
-      .find((t) => t.length > 40);
-    const description = rawDescription
-      ? rawDescription
-          .replace(/\d[\d\s.,]*\s*€/g, '')
-          .replace(/Baisse de prix|Transaction sécurisée incluse|P[ay]?ez en \d+[x\s]*dès\s*[\d,]+.*?(?=€|\n)/gi, '')
-          .replace(/aujourd’hui à.*?\d{2}:\d{2}|il y a .*?\d{2}:\d{2}/gi, '')
-          .replace(/\d{1,2} (novembre|décembre|janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre) \d{4}/gi, '')
-          .replace(/À [A-Za-zÀ-ÿ'’\-]+\s*\d{0,5}/g, '')
+    // Description : UNIQUEMENT le conteneur dédié de l'annonce.
+    // (adview_spotlight_description_container contient prix/date : on l'exclut)
+    const descEl = document.querySelector('[data-qa-id="adview_description_container"]');
+    const description = descEl
+      ? (descEl.textContent ?? '')
+          .replace(/Voir plus$/i, '')
           .replace(/\s{2,}/g, ' ')
-          .trim()
+          .trim() || null
       : null;
 
     // Prix : le <p> de classe « text-headline-2 » (prix principal de l'annonce).
@@ -597,15 +594,20 @@ const adapter: Adapter = {
         img?.getAttribute('data-lazy-src') ??
         img?.getAttribute('srcset')?.split(' ')[0] ??
         null;
-      // Catégorie = dernier segment de texte avant « · Créée » dans la carte.
-      // (la carte peut contenir « Livraison », le prix, etc. avant la catégorie)
-      const beforeCreated = text.split(/·\s*Créée/i)[0] ?? '';
-      const category =
-        beforeCreated
-          .split(/[·•]/)
-          .map((s) => s.replace(/Livraison/gi, '').replace(/[\d\s.,]+€/g, '').trim())
-          .filter(Boolean)
-          .slice(-1)[0] ?? null;
+      // Catégorie : chercher un élément feuille dont le texte EST une catégorie
+      // connue, à côté de « Créée… ». Jamais de texte de carte entier.
+      const CATEGORIES = [
+        'Accessoires informatique', 'Ordinateurs', 'Consoles', 'Jeux vidéo',
+        'Photo, audio & vidéo', 'Sport & Plein air', 'Instruments de musique',
+        'Mode', 'Maison & Jardin', 'Véhicules', 'Immobilier', 'Loisirs',
+        'Électroménager', 'High-Tech', 'Matériel pro', 'Famille',
+      ];
+      const categoryElement = [...(card?.querySelectorAll('p, span, div') ?? [])].find((el) => {
+        if (el.children.length) return false;
+        const v = (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+        return CATEGORIES.some((c) => c.toLowerCase() === v.toLowerCase());
+      });
+      const category = categoryElement?.textContent?.replace(/\s+/g, ' ').trim() ?? null;
       const paused = /réactiver l['’]annonce|annonce mise en pause/i.test(text);
       const delivery = /livraison/i.test(text);
       return {
